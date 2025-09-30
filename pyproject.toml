@@ -1,0 +1,42 @@
+[project]
+name = "voiceconversion"
+version = "0.0.2"
+authors = [
+  { name="develOseven", email="devel.oseven@gmail.com" },
+]
+description = "Speech-to-speech conversion"
+readme = "README.md"
+requires-python = "==3.10.8"
+dependencies = [
+  "msvc-runtime>=14.38; sys_platform=='win32'",
+  "numpy<2", # Not all modules have migrated to NumPy 2 yet. Using latest NumPy 1 version
+  "scipy",
+  "librosa",
+  "sounddevice<0.5.0", # https://github.com/spatialaudio/python-sounddevice/pull/539
+  "python-dotenv",
+  "pydantic-settings",
+  "xxhash",
+  "torch>=2.4.0",
+  "torchaudio",
+  "faiss-cpu; sys_platform!='linux'",
+  "faiss-gpu; sys_platform=='linux'",
+  "onnxscript",
+  "onnxsim",
+  "onnxruntime-gpu",
+  "torchcrepe",
+  "torchfcpe",
+  "safetensors",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[tool.uv.pip]
+extra-index-url = ["https://download.pytorch.org/whl/nightly/cu126"]
+
+[project.urls]
+Homepage = "https://github.com/develOseven/voiceconversion"
+Issues = "https://github.com/develOseven/voiceconversion/issues"

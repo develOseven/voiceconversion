@@ -1,0 +1,23 @@
+from const import PitchExtractorType
+from voiceconversion.pitch_extractor.PitchExtractor import PitchExtractor
+from voiceconversion.common.rmvpe.rmvpe import RMVPE
+from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
+import torch
+
+
+class RMVPEPitchExtractor(PitchExtractor):
+
+    def __init__(self, file: str):
+        super().__init__()
+        self.type: PitchExtractorType = "rmvpe"
+
+        device_manager = DeviceManager.get_instance()
+        self.rmvpe = RMVPE(model_path=file, is_half=device_manager.use_fp16(), use_jit_compile=device_manager.use_jit_compile(), device=device_manager.device)
+
+    def extract(
+        self,
+        audio: torch.Tensor,
+        sr: int,
+        window: int,
+    ) -> torch.Tensor:
+        return self.rmvpe.infer_from_audio_t(audio).squeeze()
