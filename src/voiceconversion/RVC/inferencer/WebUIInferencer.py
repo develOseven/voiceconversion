@@ -1,5 +1,5 @@
 import torch
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
 
 from voiceconversion.RVC.inferencer.Inferencer import Inferencer

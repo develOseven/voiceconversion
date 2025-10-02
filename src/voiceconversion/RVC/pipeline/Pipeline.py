@@ -23,7 +23,7 @@ from voiceconversion.RVC.inferencer.Inferencer import Inferencer
 
 from voiceconversion.pitch_extractor.PitchExtractor import PitchExtractor
 from voiceconversion.utils.Timer import Timer2
-from const import F0_MEL_MIN, F0_MEL_MAX
+from voiceconversion.const import F0_MEL_MIN, F0_MEL_MAX
 
 logger = logging.getLogger(__name__)
 

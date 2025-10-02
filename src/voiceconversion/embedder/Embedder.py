@@ -3,7 +3,7 @@ from typing import Any
 import torch
 from torch import device
 
-from const import EmbedderType
+from voiceconversion.const import EmbedderType
 from voiceconversion.embedder.EmbedderProtocol import EmbedderProtocol
 import logging
 logger = logging.getLogger(__name__)

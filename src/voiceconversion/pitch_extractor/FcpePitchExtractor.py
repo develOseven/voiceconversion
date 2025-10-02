@@ -1,6 +1,6 @@
 import torch
 
-from const import PitchExtractorType
+from voiceconversion.const import PitchExtractorType
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
 from voiceconversion.pitch_extractor.PitchExtractor import PitchExtractor
 from voiceconversion.common.FCPE import spawn_infer_model_from_pt

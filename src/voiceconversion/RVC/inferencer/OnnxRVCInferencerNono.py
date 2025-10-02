@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 
 from voiceconversion.RVC.inferencer.OnnxRVCInferencer import OnnxRVCInferencer
 

@@ -1,6 +1,6 @@
 import logging
 from typing import Protocol
-from const import PitchExtractorType
+from voiceconversion.const import PitchExtractorType
 from voiceconversion.pitch_extractor.CrepeOnnxPitchExtractor import CrepeOnnxPitchExtractor
 from voiceconversion.pitch_extractor.CrepePitchExtractor import CrepePitchExtractor
 from voiceconversion.pitch_extractor.PitchExtractor import PitchExtractor

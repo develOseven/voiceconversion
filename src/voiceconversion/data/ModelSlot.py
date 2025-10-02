@@ -1,5 +1,5 @@
 from typing import TypeAlias, Union
-from const import MAX_SLOT_NUM, EnumInferenceTypes, EmbedderType, VoiceChangerType
+from voiceconversion.const import MAX_SLOT_NUM, EnumInferenceTypes, EmbedderType, VoiceChangerType
 
 from dataclasses import dataclass, asdict, field
 

@@ -1,7 +1,7 @@
 from typing import Any, Protocol, TypeAlias
 import torch
 import numpy as np
-from const import VoiceChangerType
+from voiceconversion.const import VoiceChangerType
 from voiceconversion.data.ModelSlot import ModelSlots
 from voiceconversion.VoiceChangerSettings import VoiceChangerSettings
 

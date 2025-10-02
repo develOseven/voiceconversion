@@ -1,7 +1,7 @@
 import torch
 import onnxruntime
 import json
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from voiceconversion.common.OnnxLoader import load_onnx_model
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
 from voiceconversion.RVC.inferencer.Inferencer import Inferencer

@@ -1,5 +1,5 @@
 import numpy as np
-from const import SERVER_DEVICE_SAMPLE_RATES
+from voiceconversion.const import SERVER_DEVICE_SAMPLE_RATES
 
 from queue import Queue
 import logging

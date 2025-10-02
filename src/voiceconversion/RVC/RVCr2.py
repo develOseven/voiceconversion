@@ -5,7 +5,7 @@ import logging
 import os
 import torch
 from voiceconversion.data.ModelSlot import RVCModelSlot, saveSlotInfo
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from voiceconversion.embedder.EmbedderManager import EmbedderManager
 from voiceconversion.utils.VoiceChangerModel import (
     AudioInOutFloat,
@@ -20,7 +20,7 @@ from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
 from voiceconversion.RVC.pipeline.Pipeline import Pipeline
 from torchaudio import transforms as tat
 from voiceconversion.VoiceChangerSettings import VoiceChangerSettings
-from Exceptions import (
+from voiceconversion.Exceptions import (
     PipelineNotInitializedException,
 )
 
@@ -28,13 +28,14 @@ logger = logging.getLogger(__name__)
 
 
 class RVCr2(VoiceChangerModel):
-    def __init__(self, model_dir: str, slotInfo: RVCModelSlot, settings: VoiceChangerSettings):
+    def __init__(self, model_dir: str, content_vec_500_onnx: str, slotInfo: RVCModelSlot, settings: VoiceChangerSettings):
         self.voiceChangerType = "RVC"
 
         self.device_manager = DeviceManager.get_instance()
         EmbedderManager.initialize()
         self.settings = settings
         self.model_dir = model_dir
+        self.content_vec_500_onnx = content_vec_500_onnx
 
         self.pipeline: Pipeline | None = None
 
@@ -67,7 +68,7 @@ class RVCr2(VoiceChangerModel):
         # pipelineの生成
         try:
             self.pipeline = createPipeline(
-                self.model_dir, self.slotInfo, self.settings.f0Detector, self.settings.useONNX, force_reload
+                self.model_dir, self.content_vec_500_onnx, self.slotInfo, self.settings.f0Detector, self.settings.useONNX, force_reload
             )
         except Exception as e:  # NOQA
             logger.error("Failed to create pipeline.")

@@ -2,7 +2,7 @@ import torch
 import json
 import logging
 from safetensors import safe_open
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
 from voiceconversion.RVC.inferencer.Inferencer import Inferencer
 from .rvc_models.infer_pack.models import SynthesizerTrnMs768NSFsid_nono

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import onnxruntime
-from const import PitchExtractorType
+from voiceconversion.const import PitchExtractorType
 from voiceconversion.common.OnnxLoader import load_onnx_model
 from voiceconversion.pitch_extractor.PitchExtractor import PitchExtractor
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager

@@ -1,4 +1,4 @@
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from voiceconversion.RVC.inferencer.Inferencer import Inferencer
 from voiceconversion.RVC.inferencer.OnnxRVCInferencer import OnnxRVCInferencer
 from voiceconversion.RVC.inferencer.OnnxRVCInferencerNono import OnnxRVCInferencerNono

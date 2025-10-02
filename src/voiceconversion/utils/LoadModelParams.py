@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from const import VoiceChangerType
+from voiceconversion.const import VoiceChangerType
 from typing import Literal, TypeAlias
 
 LoadModelParamFileKind: TypeAlias = Literal[

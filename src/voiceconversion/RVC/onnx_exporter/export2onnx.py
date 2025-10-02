@@ -5,7 +5,7 @@ import os
 import safetensors
 import torch
 from onnxsim import simplify
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from voiceconversion.data.ModelSlot import RVCModelSlot
 from voiceconversion.common.SafetensorsUtils import load_model
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager

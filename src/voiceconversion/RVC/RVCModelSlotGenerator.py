@@ -1,5 +1,5 @@
 import os
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from dataclasses import asdict
 import torch
 import onnxruntime
@@ -10,15 +10,14 @@ from voiceconversion.data.ModelSlot import RVCModelSlot
 from voiceconversion.common.SafetensorsUtils import convert_single
 from voiceconversion.utils.LoadModelParams import LoadModelParams
 from voiceconversion.utils.ModelSlotGenerator import ModelSlotGenerator
-from settings import get_settings
 import logging
 logger = logging.getLogger(__name__)
 
 
 class RVCModelSlotGenerator(ModelSlotGenerator):
     @classmethod
-    def load_model(cls, props: LoadModelParams):
-        model_dir = get_settings().model_dir
+    def load_model(cls, props: LoadModelParams, model_dir: str):
+        model_dir = model_dir
 
         slotInfo: RVCModelSlot = RVCModelSlot()
         for file in props.files:

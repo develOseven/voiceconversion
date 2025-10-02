@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import sounddevice as sd
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Literal, TypeAlias
 
 ServerAudioDeviceType: TypeAlias = Literal["audioinput", "audiooutput"]
@@ -23,11 +24,13 @@ def dummy_callback(data: np.ndarray, frames, times, status):
     pass
 
 
+@lru_cache(maxsize=1)
 def checkSamplingRate(deviceId: int, desiredSamplingRate: int, type: ServerAudioDeviceType):
     if type == "input":
         try:
             with sd.InputStream(
                 device=deviceId,
+                channels=[1, 0],
                 callback=dummy_callback,
                 dtype="float32",
                 samplerate=desiredSamplingRate,
@@ -52,6 +55,7 @@ def checkSamplingRate(deviceId: int, desiredSamplingRate: int, type: ServerAudio
             return False
 
 
+@lru_cache(maxsize=1)
 def list_audio_device():
     try:
         audioDeviceList = sd.query_devices()

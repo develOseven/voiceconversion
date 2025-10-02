@@ -1,5 +1,5 @@
 from typing import Protocol
-from const import VoiceChangerType
+from voiceconversion.const import VoiceChangerType
 from dataclasses import dataclass
 from settings import ServerSettings
 

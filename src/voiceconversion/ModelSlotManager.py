@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import shutil
-from const import UPLOAD_DIR
 from voiceconversion.data.ModelSlot import ModelSlots, loadAllSlotInfo, saveSlotInfo
 
 logger = logging.getLogger(__name__)
@@ -11,14 +10,15 @@ logger = logging.getLogger(__name__)
 class ModelSlotManager:
     _instance = None
 
-    def __init__(self, model_dir: str):
+    def __init__(self, model_dir: str, upload_dir: str):
         self.model_dir = model_dir
+        self.upload_dir = upload_dir
         self.modelSlots = loadAllSlotInfo(self.model_dir)
 
     @classmethod
-    def get_instance(cls, model_dir: str):
+    def get_instance(cls, model_dir: str, upload_dir: str):
         if cls._instance is None:
-            cls._instance = cls(model_dir)
+            cls._instance = cls(model_dir, upload_dir)
         return cls._instance
 
     def _save_model_slot(self, slotIndex: int, slotInfo: ModelSlots):
@@ -52,7 +52,7 @@ class ModelSlotManager:
 
     def store_model_assets(self, params: str):
         paramsDict = json.loads(params)
-        uploadPath = os.path.join(UPLOAD_DIR, paramsDict["file"])
+        uploadPath = os.path.join(self.upload_dir, paramsDict["file"])
         storeDir = os.path.join(self.model_dir, str(paramsDict["slot"]))
         storePath = os.path.join(
             storeDir,

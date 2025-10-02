@@ -2,7 +2,7 @@ from typing import Any, Protocol
 import torch
 import onnxruntime
 
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 
 
 class Inferencer(Protocol):

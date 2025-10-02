@@ -1,4 +1,4 @@
-from const import PitchExtractorType
+from voiceconversion.const import PitchExtractorType
 from voiceconversion.pitch_extractor.PitchExtractor import PitchExtractor
 from voiceconversion.common.rmvpe.rmvpe import RMVPE
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager

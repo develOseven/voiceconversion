@@ -1,6 +1,6 @@
 import torchcrepe
 import torch
-from const import PitchExtractorType, F0_MIN, F0_MAX
+from voiceconversion.const import PitchExtractorType, F0_MIN, F0_MAX
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
 from voiceconversion.pitch_extractor.PitchExtractor import PitchExtractor
 from voiceconversion.pitch_extractor.torchcrepe.load import load_model

@@ -1,6 +1,6 @@
 import torch
 import json
-from const import EnumInferenceTypes
+from voiceconversion.const import EnumInferenceTypes
 from safetensors import safe_open
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
 from voiceconversion.RVC.inferencer.Inferencer import Inferencer

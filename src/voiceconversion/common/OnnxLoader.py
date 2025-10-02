@@ -1,7 +1,7 @@
 import onnx
 import os
 from xxhash import xxh128
-from utils.hasher import compute_hash
+from voiceconversion.utils.hasher import compute_hash
 
 from onnx import ModelProto
 from onnxruntime.quantization import QuantType, quantize_dynamic, quant_pre_process
