@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class VoiceChangerV2:
-    def __init__(self, settings: VoiceChangerSettings, tmp_dir: str):
+    def __init__(self, settings: VoiceChangerSettings, io_recorder_dir: str | None = None):
         # 初期化
         self.settings = settings
 
@@ -33,11 +33,14 @@ class VoiceChangerV2:
         self.vcmodel: VoiceChangerModel | None = None
         self.device_manager = DeviceManager.get_instance()
         self.sola_buffer: torch.Tensor | None = None
-        self.io_recorder = IORecorder(
-            self.settings.inputSampleRate,
-            self.settings.outputSampleRate,
-            tmp_dir,
-        )
+        if io_recorder_dir is not None:
+            self.io_recorder: IORecorder | None = IORecorder(
+                self.settings.inputSampleRate,
+                self.settings.outputSampleRate,
+                io_recorder_dir,
+            )
+        else:
+            self.io_recorder = None
         self._generate_strength()
 
     def initialize(self, vcmodel: VoiceChangerModel, pretrain_dir: str):
@@ -55,7 +58,8 @@ class VoiceChangerV2:
         return self.vcmodel.voiceChangerType
 
     def set_input_sample_rate(self):
-        self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
+        if self.io_recorder is not None:
+            self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
 
         self.extra_frame = int(self.settings.extraConvertSize * self.settings.inputSampleRate)
         self.crossfade_frame = int(self.settings.crossFadeOverlapSize * self.settings.inputSampleRate)
@@ -66,7 +70,8 @@ class VoiceChangerV2:
         self.vcmodel.realloc(self.block_frame, self.extra_frame, self.crossfade_frame, self.sola_search_frame)
 
     def set_output_sample_rate(self):
-        self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
+        if self.io_recorder is not None:
+            self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
 
         self.vcmodel.set_sampling_rate(self.settings.inputSampleRate, self.settings.outputSampleRate)
 
@@ -167,7 +172,7 @@ class VoiceChangerV2:
         mainprocess_time = t.secs
 
         # 後処理
-        if self.settings.recordIO:
+        if self.io_recorder is not None and self.settings.recordIO:
             self.io_recorder.write_input((audio_in * 32767).astype(np.int16).tobytes())
             self.io_recorder.write_output((result * 32767).astype(np.int16).tobytes())
 
