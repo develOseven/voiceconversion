@@ -59,7 +59,7 @@ class RVCr2(VoiceChangerModel):
         self.is_half = self.device_manager.use_fp16()
         self.dtype = torch.float16 if self.is_half else torch.float32
 
-    def initialize(self, force_reload: bool = False):
+    def initialize(self, force_reload: bool, pretrain_dir: str):
         logger.info("Initializing...")
 
         if self.settings.useONNX and not self.slotInfo.modelFileOnnx:
@@ -68,7 +68,7 @@ class RVCr2(VoiceChangerModel):
         # pipelineの生成
         try:
             self.pipeline = createPipeline(
-                self.model_dir, self.content_vec_500_onnx, self.slotInfo, self.settings.f0Detector, self.settings.useONNX, force_reload
+                self.model_dir, self.content_vec_500_onnx, self.slotInfo, self.settings.f0Detector, self.settings.useONNX, force_reload, pretrain_dir
             )
         except Exception as e:  # NOQA
             logger.error("Failed to create pipeline.")
@@ -106,13 +106,13 @@ class RVCr2(VoiceChangerModel):
                 dtype=torch.float32
             ).to(self.device_manager.device)
 
-    def change_pitch_extractor(self):
+    def change_pitch_extractor(self, pretrain_dir: str):
         pitchExtractor = PitchExtractorManager.getPitchExtractor(
-            self.settings.f0Detector, self.settings.gpu
+            self.settings.f0Detector, self.settings.gpu, pretrain_dir
         )
         self.pipeline.setPitchExtractor(pitchExtractor)
 
-    def update_settings(self, key: str, val, old_val):
+    def update_settings(self, key: str, val, old_val, pretrain_dir: str):
         if key in {"gpu", "forceFp32", "disableJit"}:
             self.is_half = self.device_manager.use_fp16()
             self.dtype = torch.float16 if self.is_half else torch.float32
@@ -120,7 +120,7 @@ class RVCr2(VoiceChangerModel):
         elif key == 'useONNX':
             self.initialize()
         elif key == "f0Detector" and self.pipeline is not None:
-            self.change_pitch_extractor()
+            self.change_pitch_extractor(pretrain_dir)
         elif key == 'silentThreshold':
             # Convert dB to RMS
             self.inputSensitivity = 10 ** (self.settings.silentThreshold / 20)

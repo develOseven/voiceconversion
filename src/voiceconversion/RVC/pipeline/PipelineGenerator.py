@@ -13,7 +13,7 @@ from voiceconversion.pitch_extractor.PitchExtractorManager import PitchExtractor
 logger = logging.getLogger(__name__)
 
 
-def createPipeline(model_dir: str, content_vec_500_onnx: str, modelSlot: RVCModelSlot, f0Detector: str, useONNX: bool, force_reload: bool):
+def createPipeline(model_dir: str, content_vec_500_onnx: str, modelSlot: RVCModelSlot, f0Detector: str, useONNX: bool, force_reload: bool, pretrain_dir: str):
     # Inferencer 生成
     if useONNX:
         modelPath = os.path.join(model_dir, str(modelSlot.slotIndex), os.path.basename(modelSlot.modelFileOnnx))
@@ -26,7 +26,7 @@ def createPipeline(model_dir: str, content_vec_500_onnx: str, modelSlot: RVCMode
     embedder = EmbedderManager.get_embedder(content_vec_500_onnx, modelSlot.embedder, force_reload)
 
     # pitchExtractor
-    pitchExtractor = PitchExtractorManager.getPitchExtractor(f0Detector, force_reload)
+    pitchExtractor = PitchExtractorManager.getPitchExtractor(f0Detector, force_reload, pretrain_dir)
 
     # index, feature
     indexPath = os.path.join(model_dir, str(modelSlot.slotIndex), os.path.basename(modelSlot.indexFile))

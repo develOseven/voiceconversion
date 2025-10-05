@@ -13,7 +13,7 @@ class VoiceChangerModel(Protocol):
     def __init__(self, slot_info: ModelSlots, settings: VoiceChangerSettings):
         ...
 
-    def initialize(self, force_reload: bool = False):
+    def initialize(self, force_reload: bool, pretrain_dir: str):
         ...
 
     def set_slot_info(self, slot_info: ModelSlots):
@@ -31,7 +31,7 @@ class VoiceChangerModel(Protocol):
     def inference(self, data: tuple[Any, ...]) -> torch.Tensor:
         ...
 
-    def update_settings(self, key: str, val: Any, old_val: Any):
+    def update_settings(self, key: str, val: Any, old_val: Any, pretrain_dir: str):
         ...
 
     def set_sampling_rate(self, inputSampleRate: int, outputSampleRate: int):

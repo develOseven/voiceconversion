@@ -26,6 +26,7 @@ dependencies = [
   "torchcrepe",
   "torchfcpe",
   "safetensors",
+  "aiohttp",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

@@ -40,14 +40,14 @@ class VoiceChangerV2:
         )
         self._generate_strength()
 
-    def initialize(self, vcmodel: VoiceChangerModel):
+    def initialize(self, vcmodel: VoiceChangerModel, pretrain_dir: str):
         self.vcmodel = vcmodel
         self.vcmodel.realloc(self.block_frame, self.extra_frame, self.crossfade_frame, self.sola_search_frame)
-        self.vcmodel.initialize()
+        self.vcmodel.initialize(force_reload=False, pretrain_dir=pretrain_dir)
 
-    def set_slot_info(self, slot_info: ModelSlots):
+    def set_slot_info(self, slot_info: ModelSlots, pretrain_dir: str):
         self.vcmodel.set_slot_info(slot_info)
-        self.vcmodel.initialize()
+        self.vcmodel.initialize(force_reload=False, pretrain_dir=pretrain_dir)
 
     def get_type(self) -> VoiceChangerType:
         if self.vcmodel is None:
@@ -75,7 +75,7 @@ class VoiceChangerV2:
             return self.vcmodel.get_info()
         return {}
 
-    def update_settings(self, key: str, val: Any, old_val: Any):
+    def update_settings(self, key: str, val: Any, old_val: Any, pretrain_dir: str):
         if key == "serverReadChunkSize":
             self.block_frame = self.settings.serverReadChunkSize * 128
         elif key == 'gpu':
@@ -92,7 +92,7 @@ class VoiceChangerV2:
             self._generate_strength()
 
         if self.vcmodel is not None:
-            self.vcmodel.update_settings(key, val, old_val)
+            self.vcmodel.update_settings(key, val, old_val, pretrain_dir)
             if key in {'gpu', 'serverReadChunkSize', 'extraConvertSize', 'crossFadeOverlapSize', 'silenceFront', 'forceFp32'}:
                 self.vcmodel.realloc(self.block_frame, self.extra_frame, self.crossfade_frame, self.sola_search_frame)
 
