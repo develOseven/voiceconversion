@@ -6,7 +6,7 @@ authors = [
 ]
 description = "Speech-to-speech conversion"
 readme = "README.md"
-requires-python = "==3.10.8"
+requires-python = "==3.12.3"
 dependencies = [
   "msvc-runtime>=14.38; sys_platform=='win32'",
   "numpy<2", # Not all modules have migrated to NumPy 2 yet. Using latest NumPy 1 version
@@ -19,7 +19,7 @@ dependencies = [
   "torch>=2.4.0",
   "torchaudio",
   "faiss-cpu; sys_platform!='linux'",
-  "faiss-gpu; sys_platform=='linux'",
+  "faiss-gpu-cu12[fix_cuda]; sys_platform=='linux'",
   "onnxscript",
   "onnxsim",
   "onnxruntime-gpu",
