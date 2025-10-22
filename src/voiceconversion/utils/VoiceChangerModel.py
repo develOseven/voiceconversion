@@ -7,6 +7,7 @@ from voiceconversion.VoiceChangerSettings import VoiceChangerSettings
 
 AudioInOutFloat: TypeAlias = np.ndarray[Any, np.dtype[np.float32]]
 
+
 class VoiceChangerModel(Protocol):
     voiceChangerType: VoiceChangerType
 
@@ -28,7 +29,7 @@ class VoiceChangerModel(Protocol):
     def convert(self, data: torch.Tensor, sample_rate: int) -> torch.Tensor:
         ...
 
-    def inference(self, data: tuple[Any, ...]) -> torch.Tensor:
+    def inference(self, data: AudioInOutFloat) -> torch.Tensor:
         ...
 
     def update_settings(self, key: str, val: Any, old_val: Any, pretrain_dir: str):

@@ -1,6 +1,6 @@
 [project]
 name = "voiceconversion"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="develOseven", email="devel.oseven@gmail.com" },
 ]
@@ -9,17 +9,17 @@ readme = "README.md"
 requires-python = "==3.12.3"
 dependencies = [
   "msvc-runtime>=14.38; sys_platform=='win32'",
-  "numpy<2", # Not all modules have migrated to NumPy 2 yet. Using latest NumPy 1 version
+  "numpy", # faiss 1.2.0 uses NumPy 1
   "scipy",
   "librosa",
   "sounddevice<0.5.0", # https://github.com/spatialaudio/python-sounddevice/pull/539
   "python-dotenv",
   "pydantic-settings",
   "xxhash",
-  "torch>=2.4.0",
+  "torch",
   "torchaudio",
   "faiss-cpu; sys_platform!='linux'",
-  "faiss-gpu-cu12[fix_cuda]; sys_platform=='linux'",
+  "faiss-gpu-cu12; sys_platform=='linux'",
   "onnxscript",
   "onnxsim",
   "onnxruntime-gpu",

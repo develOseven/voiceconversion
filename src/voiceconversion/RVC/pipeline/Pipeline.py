@@ -112,7 +112,14 @@ class Pipeline:
     def setPitchExtractor(self, pitchExtractor: PitchExtractor):
         self.pitchExtractor = pitchExtractor
 
-    def extract_pitch(self, audio: torch.Tensor, pitch: torch.Tensor | None, pitchf: torch.Tensor | None, f0_up_key: int, formant_shift: float) -> tuple[torch.Tensor, torch.Tensor]:
+    def extract_pitch(
+            self,
+            audio: torch.Tensor,
+            pitch: torch.Tensor | None,
+            pitchf: torch.Tensor | None,
+            f0_up_key: int,
+            formant_shift: float,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         f0 = self.pitchExtractor.extract(
             audio,
             HUBERT_SAMPLE_RATE,
@@ -161,7 +168,7 @@ class Pipeline:
 
     def exec(
         self,
-        sid: int,
+        dstId: int,
         audio: torch.Tensor,  # torch.tensor [n]
         pitch: torch.Tensor | None,  # torch.tensor [m]
         pitchf: torch.Tensor | None,  # torch.tensor [m]
@@ -177,15 +184,18 @@ class Pipeline:
         protect: float = 0.5,
     ) -> torch.Tensor:
         with Timer2("Pipeline-Exec", False) as t:  # NOQA
-            # 16000のサンプリングレートで入ってきている。以降この世界は16000で処理。
+            # It comes in at a sampling rate of 16000. From then on, all will be processed at 16000.
             assert audio.dim() == 1, audio.dim()
 
             formant_factor = 2 ** (formant_shift / 12)
             formant_length = int(np.ceil(return_length * formant_factor))
             t.record("pre-process")
 
-            # ピッチ検出
-            pitch, pitchf = self.extract_pitch(audio[silence_front:], pitch, pitchf, f0_up_key, formant_shift) if self.use_f0 else (None, None)
+            # Pitch Detection
+            if self.use_f0:
+                pitch, pitchf = self.extract_pitch(audio[silence_front:], pitch, pitchf, f0_up_key, formant_shift)
+            else:
+                pitch, pitchf = (None, None)
             t.record("extract-pitch")
 
             # embedding
@@ -193,7 +203,7 @@ class Pipeline:
             feats = torch.cat((feats, feats[:, -1:, :]), 1)
             t.record("extract-feats")
 
-            # Index - feature抽出
+            # Index - feature extract
             is_active_index = self.use_index and index_rate > 0
             use_protect = protect < 0.5
             if self.use_f0 and is_active_index and use_protect:
@@ -203,7 +213,7 @@ class Pipeline:
                 skip_offset = skip_head // 2
                 index_audio = feats[0][skip_offset :]
 
-                # TODO: kは調整できるようにする
+                # TODO: k should be adjustable
                 index_audio = self._search_index(index_audio.float(), 8).unsqueeze(0)
                 if self.is_half:
                     index_audio = index_audio.half()
@@ -213,6 +223,8 @@ class Pipeline:
 
             feats = self._upscale(feats)[:, :audio_feats_len, :]
             if self.use_f0:
+                assert pitch is not None
+                assert pitchf is not None
                 pitch = pitch[:, -audio_feats_len:]
                 pitchf = pitchf[:, -audio_feats_len:] * (formant_length / return_length)
                 # pitchの推定が上手くいかない(pitchf=0)場合、検索前の特徴を混ぜる
@@ -229,10 +241,19 @@ class Pipeline:
 
             p_len = torch.tensor([audio_feats_len], device=self.device, dtype=torch.int64)
 
-            sid = torch.tensor([sid], device=self.device, dtype=torch.int64)
+            sid = torch.tensor([dstId], device=self.device, dtype=torch.int64)
             t.record("mid-precess")
-            # 推論実行
-            out_audio = self.inferencer.infer(feats, p_len, pitch, pitchf, sid, skip_head, return_length, formant_length).float()
+            # Inference execution
+            out_audio = self.inferencer.infer(
+                feats,
+                p_len,
+                pitch,
+                pitchf,
+                sid,
+                skip_head,
+                return_length,
+                formant_length,
+            ).float()
             t.record("infer")
 
             # Formant shift sample rate adjustment

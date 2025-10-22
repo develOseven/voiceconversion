@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 class VoiceChangerV2:
     def __init__(self, settings: VoiceChangerSettings, io_recorder_dir: str | None = None):
-        # 初期化
         self.settings = settings
 
         self.block_frame = self.settings.serverReadChunkSize * 128
@@ -49,6 +48,7 @@ class VoiceChangerV2:
         self.vcmodel.initialize(force_reload=False, pretrain_dir=pretrain_dir)
 
     def set_slot_info(self, slot_info: ModelSlots, pretrain_dir: str):
+        assert self.vcmodel is not None
         self.vcmodel.set_slot_info(slot_info)
         self.vcmodel.initialize(force_reload=False, pretrain_dir=pretrain_dir)
 
@@ -98,11 +98,17 @@ class VoiceChangerV2:
 
         if self.vcmodel is not None:
             self.vcmodel.update_settings(key, val, old_val, pretrain_dir)
-            if key in {'gpu', 'serverReadChunkSize', 'extraConvertSize', 'crossFadeOverlapSize', 'silenceFront', 'forceFp32'}:
+            if key in {
+                'gpu',
+                'serverReadChunkSize',
+                'extraConvertSize',
+                'crossFadeOverlapSize',
+                'silenceFront',
+                'forceFp32',
+            }:
                 self.vcmodel.realloc(self.block_frame, self.extra_frame, self.crossfade_frame, self.sola_search_frame)
 
-
-    def _generate_strength(self):
+    def _generate_strength(self) -> None:
         self.fade_in_window: torch.Tensor = (
             torch.sin(
                 0.5
@@ -129,6 +135,9 @@ class VoiceChangerV2:
         return self.vcmodel.get_processing_sampling_rate()
 
     def process_audio(self, audio_in: AudioInOutFloat) -> tuple[AudioInOutFloat, float]:
+        assert self.vcmodel is not None
+        assert self.sola_buffer is not None
+
         block_size = audio_in.shape[0]
 
         audio, vol = self.vcmodel.inference(audio_in)
@@ -162,7 +171,7 @@ class VoiceChangerV2:
         return audio[: block_size].detach().cpu().numpy(), vol
 
     @torch.no_grad()
-    def on_request(self, audio_in: AudioInOutFloat) -> tuple[AudioInOutFloat, list[Union[int, float]]]:
+    def on_request(self, audio_in: AudioInOutFloat) -> tuple[AudioInOutFloat, float, list[Union[int, float]]]:
         if self.vcmodel is None:
             raise VoiceChangerIsNotSelectedException("Voice Changer is not selected.")
 
@@ -171,7 +180,7 @@ class VoiceChangerV2:
 
         mainprocess_time = t.secs
 
-        # 後処理
+        # Post-processing
         if self.io_recorder is not None and self.settings.recordIO:
             self.io_recorder.write_input((audio_in * 32767).astype(np.int16).tobytes())
             self.io_recorder.write_output((result * 32767).astype(np.int16).tobytes())

@@ -10,6 +10,7 @@ from voiceconversion.common.SafetensorsUtils import load_model
 
 logger = logging.getLogger(__name__)
 
+
 class RVCInferencerv2(Inferencer):
     def load_model(self, file: str):
         device_manager = DeviceManager.get_instance()

@@ -8,6 +8,7 @@ from typing import Literal, TypeAlias
 
 VoiceChangerType: TypeAlias = Literal[
     "RVC",
+    "None",
 ]
 
 SERVER_DEVICE_SAMPLE_RATES = [16000, 32000, 44100, 48000, 96000, 192000]
@@ -24,6 +25,7 @@ class EnumInferenceTypes(Enum):
     pyTorchWebUINono = "pyTorchWebUINono"
     onnxRVC = "onnxRVC"
     onnxRVCNono = "onnxRVCNono"
+
 
 F0_MIN = 50
 F0_MAX = 1100
