@@ -59,9 +59,9 @@ class Pipeline:
         logger.info("GENERATE EMBEDDER" + str(self.embedder))
         logger.info("GENERATE PITCH EXTRACTOR" + str(self.pitchExtractor))
 
-        self.device_manager = DeviceManager.get_instance()
-        self.device = self.device_manager.device
-        self.is_half = self.device_manager.use_fp16()
+        self.device = DeviceManager.get_instance().device
+        self.is_half = DeviceManager.get_instance().use_fp16()
+        self.onnx_execution_provider = DeviceManager.get_instance().get_onnx_execution_provider()
 
         self.index = index
         self.index_reconstruct: torch.Tensor | None = index_reconstruct
@@ -100,7 +100,7 @@ class Pipeline:
         (
             providers,
             provider_options,
-        ) = self.device_manager.get_onnx_execution_provider()
+        ) = self.onnx_execution_provider
         return onnxruntime.InferenceSession(onnx_model.SerializeToString(), providers=providers, provider_options=provider_options)
 
     def getPipelineInfo(self):

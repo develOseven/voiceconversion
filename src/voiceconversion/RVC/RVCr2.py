@@ -38,7 +38,7 @@ class RVCr2(VoiceChangerModel):
     ):
         self.voiceChangerType = "RVC"
 
-        self.device_manager = DeviceManager.get_instance()
+        self.device = DeviceManager.get_instance().device
         EmbedderManager.initialize()
         self.settings = settings
         self.model_dir = model_dir
@@ -63,7 +63,7 @@ class RVCr2(VoiceChangerModel):
         # Convert dB to RMS
         self.inputSensitivity = 10 ** (self.settings.silentThreshold / 20)
 
-        self.is_half = self.device_manager.use_fp16()
+        self.is_half = DeviceManager.get_instance().use_fp16()
         self.dtype = torch.float16 if self.is_half else torch.float32
 
     def initialize(self, force_reload: bool, pretrain_dir: str):
@@ -93,13 +93,13 @@ class RVCr2(VoiceChangerModel):
             orig_freq=self.input_sample_rate,
             new_freq=HUBERT_SAMPLE_RATE,
             dtype=torch.float32,
-        ).to(self.device_manager.device)
+        ).to(self.device)
 
         self.resampler_out = tat.Resample(
             orig_freq=self.slotInfo.samplingRate,
             new_freq=self.output_sample_rate,
             dtype=torch.float32,
-        ).to(self.device_manager.device)
+        ).to(self.device)
 
         logger.info("Initialized.")
 
@@ -110,14 +110,14 @@ class RVCr2(VoiceChangerModel):
                 orig_freq=self.input_sample_rate,
                 new_freq=HUBERT_SAMPLE_RATE,
                 dtype=torch.float32,
-            ).to(self.device_manager.device)
+            ).to(self.device)
         if self.output_sample_rate != output_sample_rate:
             self.output_sample_rate = output_sample_rate
             self.resampler_out = tat.Resample(
                 orig_freq=self.slotInfo.samplingRate,
                 new_freq=self.output_sample_rate,
                 dtype=torch.float32,
-            ).to(self.device_manager.device)
+            ).to(self.device)
 
     def change_pitch_extractor(self, pretrain_dir: str):
         pitchExtractor = PitchExtractorManager.getPitchExtractor(
@@ -127,7 +127,7 @@ class RVCr2(VoiceChangerModel):
 
     def update_settings(self, key: str, val, old_val, pretrain_dir: str):
         if key in {"gpu", "forceFp32", "disableJit"}:
-            self.is_half = self.device_manager.use_fp16()
+            self.is_half = DeviceManager.get_instance().use_fp16()
             self.dtype = torch.float16 if self.is_half else torch.float32
             self.initialize(True)
         elif key == "useONNX":
@@ -191,24 +191,24 @@ class RVCr2(VoiceChangerModel):
         # Audio buffer to measure volume between chunks
         audio_buffer_size = block_frame_16k + crossfade_frame_16k
         self.audio_buffer = torch.zeros(
-            audio_buffer_size, dtype=self.dtype, device=self.device_manager.device
+            audio_buffer_size, dtype=self.dtype, device=self.device
         )
 
         # Audio buffer for conversion without silence
         self.convert_buffer = torch.zeros(
-            convert_size_16k, dtype=self.dtype, device=self.device_manager.device
+            convert_size_16k, dtype=self.dtype, device=self.device
         )
         # Additional +1 is to compensate for pitch extraction algorithm
         # that can output additional feature.
         self.pitch_buffer = torch.zeros(
             self.convert_feature_size_16k + 1,
             dtype=torch.int64,
-            device=self.device_manager.device,
+            device=self.device,
         )
         self.pitchf_buffer = torch.zeros(
             self.convert_feature_size_16k + 1,
             dtype=self.dtype,
-            device=self.device_manager.device,
+            device=self.device,
         )
         logger.info(f"Allocated audio buffer size: {audio_buffer_size}")
         logger.info(f"Allocated convert buffer size: {convert_size_16k}")
@@ -222,7 +222,7 @@ class RVCr2(VoiceChangerModel):
 
         # Input audio is always float32
         audio_in_t = torch.as_tensor(
-            audio_in, dtype=torch.float32, device=self.device_manager.device
+            audio_in, dtype=torch.float32, device=self.device
         )
         if self.is_half:
             audio_in_t = audio_in_t.half()
@@ -231,7 +231,7 @@ class RVCr2(VoiceChangerModel):
 
         audio_in_16k = tat.Resample(
             orig_freq=sample_rate, new_freq=HUBERT_SAMPLE_RATE, dtype=self.dtype
-        ).to(self.device_manager.device)(audio_in_t)
+        ).to(self.device)(audio_in_t)
 
         vol_t = torch.sqrt(torch.square(audio_in_16k).mean())
 
@@ -268,7 +268,7 @@ class RVCr2(VoiceChangerModel):
 
         # Input audio is always float32
         audio_in_t = torch.as_tensor(
-            audio_in, dtype=torch.float32, device=self.device_manager.device
+            audio_in, dtype=torch.float32, device=self.device
         )
         audio_in_16k = self.resampler_in(audio_in_t)
         if self.is_half:

@@ -30,7 +30,7 @@ class VoiceChangerV2:
         self.sola_search_frame = self.settings.inputSampleRate // 100
 
         self.vcmodel: VoiceChangerModel | None = None
-        self.device_manager = DeviceManager.get_instance()
+        self.device = DeviceManager.get_instance().device
         self.sola_buffer: torch.Tensor | None = None
         if io_recorder_dir is not None:
             self.io_recorder: IORecorder | None = IORecorder(
@@ -117,7 +117,7 @@ class VoiceChangerV2:
                     0.0,
                     1.0,
                     steps=self.crossfade_frame,
-                    device=self.device_manager.device,
+                    device=self.device,
                     dtype=torch.float32,
                 )
             )
@@ -126,7 +126,7 @@ class VoiceChangerV2:
         self.fade_out_window: torch.Tensor = 1 - self.fade_in_window
 
         # ひとつ前の結果とサイズが変わるため、記録は消去する。
-        self.sola_buffer = torch.zeros(self.crossfade_frame, device=self.device_manager.device, dtype=torch.float32)
+        self.sola_buffer = torch.zeros(self.crossfade_frame, device=self.device, dtype=torch.float32)
         logger.info(f'Allocated SOLA buffer size: {self.crossfade_frame}')
 
     def get_processing_sampling_rate(self) -> int:
@@ -154,7 +154,7 @@ class VoiceChangerV2:
         cor_den = torch.sqrt(
             F.conv1d(
                 conv_input ** 2,
-                torch.ones(1, 1, self.crossfade_frame, device=self.device_manager.device),
+                torch.ones(1, 1, self.crossfade_frame, device=self.device),
             )
             + 1e-8
         )

@@ -11,7 +11,9 @@ except ImportError:
     import voiceconversion.common.deviceManager.DummyDML as torch_directml
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class CoreMLFlag(IntFlag):
     USE_CPU_ONLY = 0x001
@@ -20,6 +22,7 @@ class CoreMLFlag(IntFlag):
     ONLY_ALLOW_STATIC_INPUT_SHAPES = 0x008
     CREATE_MLPROGRAM = 0x010
 
+
 class DevicePresentation(TypedDict):
     id: int
     name: str
@@ -27,12 +30,97 @@ class DevicePresentation(TypedDict):
     backend: Literal['cpu', 'cuda', 'directml', 'mps']
 
 
-class DeviceManager(object):
+class DeviceManagerAccessError(RuntimeError):
+    """Raised when DeviceManager is used outside of an allowed context."""
+
+    pass
+
+
+class DeviceManagerContext:
+    _local = threading.local()
+
+    def __enter__(self):
+        count = getattr(self._local, "count", 0)
+        self._local.count = count + 1
+        self._local.enabled = True
+        return DeviceManager.get_instance()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        count = getattr(self._local, "count", 1) - 1
+        if count <= 0:
+            self._local.enabled = False
+            self._local.count = 0
+        else:
+            self._local.count = count
+
+    @classmethod
+    def is_enabled(cls) -> bool:
+        return getattr(cls._local, "enabled", False)
+
+
+def require_context(func):
+    """Decorator to block calls outside DeviceManagerContext."""
+
+    def wrapper(*args, **kwargs):
+        if not DeviceManagerContext.is_enabled():
+            raise DeviceManagerAccessError(
+                f"Cannot call {func.__qualname__}() outside DeviceManagerContext"
+            )
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def with_device_manager_context(func):
+    """Runs the wrapped function inside a DeviceManagerContext automatically."""
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with DeviceManagerContext():
+            return func(*args, **kwargs)
+
+    return wrapper
+
+
+def allow_outside_context(func):
+    """Marker decorator: exempt this method from context enforcement."""
+    func._allow_outside_context = True
+    return func
+
+
+class ContextProtectedMeta(type):
+    """Metaclass to automatically protect all public methods (instance, static, or class)."""
+
+    def __new__(mcls, name, bases, namespace):
+        for attr, val in namespace.items():
+            if attr.startswith("_"):
+                continue
+            target_func = (
+                val.__func__ if isinstance(val, (staticmethod, classmethod)) else val
+            )
+            if getattr(target_func, "_allow_outside_context", False):
+                continue
+            if isinstance(val, staticmethod):
+                fn = val.__func__
+                namespace[attr] = staticmethod(require_context(fn))
+            elif isinstance(val, classmethod):
+                fn = val.__func__
+                namespace[attr] = classmethod(require_context(fn))
+            elif callable(val):
+                namespace[attr] = require_context(val)
+        return super().__new__(mcls, name, bases, namespace)
+
+
+class DeviceManager(metaclass=ContextProtectedMeta):
     _instance = None
 
     @classmethod
     def get_instance(cls):
-        # TODO: Dictionary of device manager and client sessions (?)
+        if not DeviceManagerContext.is_enabled():
+            raise DeviceManagerAccessError(
+                "DeviceManager.get_instance() called outside DeviceManagerContext"
+            )
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
@@ -96,6 +184,7 @@ class DeviceManager(object):
         raise Exception(f'Failed to find device with index {dev_id}')
 
     @staticmethod
+    @allow_outside_context
     def list_devices() -> list[DevicePresentation]:
         devCount = torch.cuda.device_count()
         if getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
