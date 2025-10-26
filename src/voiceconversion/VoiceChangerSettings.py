@@ -20,6 +20,9 @@ class SetPropertyResult(NamedTuple):
 
 class VoiceChangerSettings:
 
+    def __eq__(self, other):
+        return self.get_properties() == other.get_properties()
+
     def to_dict(self) -> dict:
         return self.get_properties()
 
