@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import shutil
-from voiceconversion.data.ModelSlot import ModelSlots, loadAllSlotInfo, saveSlotInfo
+from voiceconversion.data.ModelSlot import ModelSlots, loadAllSlotInfo, loadSlotInfo, saveSlotInfo
 
 logger = logging.getLogger(__name__)
 
@@ -65,3 +65,64 @@ class ModelSlotManager:
             self._save_model_slot(paramsDict["slot"], slotInfo)
         except Exception as e:
             logger.exception(e)
+
+    def renumberSlots(
+        self,
+        sourceStart: int,
+        sourceEnd: int,
+        destinationRow: int,
+    ):
+        if destinationRow > sourceEnd:
+            blockSize = sourceEnd - sourceStart + 1
+            for slotInfo in self.modelSlots:
+                oldIndex = slotInfo.slotIndex
+
+                if sourceStart <= oldIndex <= sourceEnd:
+                    newIndex = oldIndex + (destinationRow - sourceEnd - 1)
+                elif sourceEnd < oldIndex < destinationRow:
+                    newIndex = oldIndex - blockSize
+                else:
+                    newIndex = oldIndex
+
+                if newIndex != oldIndex:
+                    slotInfo.slotIndex = newIndex
+                    saveSlotInfo(self.model_dir, newIndex, slotInfo)
+
+        elif destinationRow < sourceStart:
+            blockSize = sourceEnd - sourceStart + 1
+            for slotInfo in self.modelSlots:
+                oldIndex = slotInfo.slotIndex
+
+                if sourceStart <= oldIndex <= sourceEnd:
+                    newIndex = oldIndex - (sourceStart - destinationRow)
+                elif destinationRow <= oldIndex < sourceStart:
+                    newIndex = oldIndex + blockSize
+                else:
+                    newIndex = oldIndex
+
+                if newIndex != oldIndex:
+                    slotInfo.slotIndex = newIndex
+                    saveSlotInfo(self.model_dir, newIndex, slotInfo)
+
+        self.modelSlots = sorted(
+            self.modelSlots,
+            key=lambda slotInfo: slotInfo.slotIndex,
+        )
+
+    def removeSlots(self, first: int, last: int):
+        count = last - first + 1
+
+        remaining = []
+        for slotInfo in self.modelSlots:
+            oldIndex = slotInfo.slotIndex
+            if first <= oldIndex <= last:
+                continue
+            remaining.append(slotInfo)
+        self.modelSlots = remaining
+
+        for slotInfo in self.modelSlots:
+            oldIndex = slotInfo.slotIndex
+            if oldIndex > last:
+                newIndex = oldIndex - count
+                slotInfo.slotIndex = newIndex
+                saveSlotInfo(self.model_dir, newIndex, slotInfo)
