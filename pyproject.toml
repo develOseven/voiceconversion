@@ -1,6 +1,6 @@
 [project]
 name = "voiceconversion"
-version = "0.0.5"
+version = "0.0.6"
 authors = [
   { name="develOseven", email="devel.oseven@gmail.com" },
 ]
