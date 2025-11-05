@@ -32,7 +32,6 @@ class RVCr2(VoiceChangerModel):
     def __init__(
         self,
         model_dir: str,
-        content_vec_500_onnx: str,
         slotInfo: RVCModelSlot,
         settings: VoiceChangerSettings,
     ):
@@ -42,7 +41,6 @@ class RVCr2(VoiceChangerModel):
         EmbedderManager.initialize()
         self.settings = settings
         self.model_dir = model_dir
-        self.content_vec_500_onnx = content_vec_500_onnx
 
         self.pipeline: Pipeline | None = None
 
@@ -76,7 +74,6 @@ class RVCr2(VoiceChangerModel):
         try:
             self.pipeline = createPipeline(
                 self.model_dir,
-                self.content_vec_500_onnx,
                 self.slotInfo,
                 self.settings.f0Detector,
                 self.settings.useONNX,

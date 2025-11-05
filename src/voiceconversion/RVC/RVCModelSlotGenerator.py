@@ -62,20 +62,21 @@ class RVCModelSlotGenerator(ModelSlotGenerator):
         slot.f0 = True if cpt["f0"] == 1 else False
 
         if config_len == 18:
+            embedder = cpt.get("embedder_model", "hubert_base").replace("-", "_")
             # Original RVC
             if version == "v1":
                 slot.modelType = EnumInferenceTypes.pyTorchRVC.value if slot.f0 else EnumInferenceTypes.pyTorchRVCNono.value
                 slot.embChannels = 256
                 slot.embOutputLayer = 9
                 slot.useFinalProj = True
-                slot.embedder = "hubert_base"
+                slot.embedder = embedder
                 logger.info("Official Model(pyTorch) : v1")
             else:
                 slot.modelType = EnumInferenceTypes.pyTorchRVCv2.value if slot.f0 else EnumInferenceTypes.pyTorchRVCv2Nono.value
                 slot.embChannels = 768
                 slot.embOutputLayer = 12
                 slot.useFinalProj = False
-                slot.embedder = "hubert_base"
+                slot.embedder = embedder
                 logger.info("Official Model(pyTorch) : v2")
 
         else:

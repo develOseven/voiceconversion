@@ -1,13 +1,14 @@
 import torch
 from voiceconversion.common.OnnxLoader import load_onnx_model
 from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
+from voiceconversion.const import EmbedderType
 from voiceconversion.embedder.Embedder import Embedder
 import onnxruntime
 import numpy as np
 
-class OnnxContentvec(Embedder):
+class OnnxEmbedder(Embedder):
 
-    def load_model(self, file: str) -> Embedder:
+    def load_model(self, embedderType: EmbedderType, file: str) -> Embedder:
         device_manager = DeviceManager.get_instance()
         self.is_half = device_manager.use_fp16()
         (
@@ -24,7 +25,7 @@ class OnnxContentvec(Embedder):
         self.fp_dtype_t = torch.float16 if self.is_half else torch.float32
         self.fp_dtype_np = np.float16 if self.is_half else np.float32
         self.onnx_session = onnxruntime.InferenceSession(model.SerializeToString(), sess_options=so, providers=onnxProviders, provider_options=onnxProviderOptions)
-        super().set_props('hubert_base', file)
+        super().set_props(embedderType, file)
         return self
 
     def extract_features(

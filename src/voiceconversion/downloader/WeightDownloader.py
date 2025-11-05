@@ -11,6 +11,8 @@ CREPE_ONNX_TINY: str = "crepe_onnx_tiny.onnx"
 CREPE_FULL: str = "crepe_full.pth"
 CREPE_TINY: str = "crepe_tiny.pth"
 CONTENT_VEC_500_ONNX: str = "content_vec_500.onnx"
+SPIN_BASE: str = "spin_base.onnx"
+SPIN_V2: str = "spin_v2.onnx"
 RMVPE: str = "rmvpe.pt"
 RMVPE_ONNX: str = "rmvpe.onnx"
 FCPE: str = "fcpe.pt"
@@ -48,6 +50,16 @@ async def downloadWeight(
             "url": "https://huggingface.co/wok000/weights_gpl/resolve/c2f3e4a8884dba0995347dfe24dc0ad40acb9eb7/content-vec/contentvec-f.onnx",
             "saveTo": os.path.join(pretrained_weights_dir, CONTENT_VEC_500_ONNX),
             "hash": "ab288ca5b540a4a15909a40edf875d1e",
+        },
+        {
+            "url": "https://huggingface.co/tg-develop/spin_rvc/resolve/main/spin.onnx",
+            "saveTo": os.path.join(pretrained_weights_dir, SPIN_BASE),
+            "hash": "d2da4abf1eaae250e87d128f399f891b",
+        },
+        {
+            "url": "https://huggingface.co/tg-develop/spin_rvc/resolve/main/spin_v2.onnx",
+            "saveTo": os.path.join(pretrained_weights_dir, SPIN_V2),
+            "hash": "4983330cc048f7fc08646c33f8e4607c",
         },
         {
             "url": "https://huggingface.co/wok000/weights/resolve/4a9dbeb086b66721378b4fb29c84bf94d3e076ec/rmvpe/rmvpe_20231006.pt",

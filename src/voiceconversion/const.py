@@ -13,7 +13,7 @@ VoiceChangerType: TypeAlias = Literal[
 
 SERVER_DEVICE_SAMPLE_RATES = [16000, 32000, 44100, 48000, 96000, 192000]
 
-EmbedderType: TypeAlias = Literal["hubert_base", "contentvec"]
+EmbedderType: TypeAlias = Literal["hubert_base", "contentvec", "spin_base", "spin_v2"]
 
 
 class EnumInferenceTypes(Enum):
