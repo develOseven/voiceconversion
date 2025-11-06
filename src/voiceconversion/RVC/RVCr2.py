@@ -4,26 +4,20 @@ VoiceChangerV2向け
 
 import logging
 import os
+
 import torch
-from voiceconversion.data.ModelSlot import RVCModelSlot, saveSlotInfo
-from voiceconversion.const import EnumInferenceTypes
-from voiceconversion.embedder.EmbedderManager import EmbedderManager
-from voiceconversion.utils.VoiceChangerModel import (
-    AudioInOutFloat,
-    VoiceChangerModel,
-)
-from voiceconversion.RVC.consts import HUBERT_SAMPLE_RATE, WINDOW_SIZE
-from voiceconversion.RVC.onnx_exporter.export2onnx import export2onnx
-from voiceconversion.pitch_extractor.PitchExtractorManager import PitchExtractorManager
-from voiceconversion.RVC.pipeline.PipelineGenerator import createPipeline
-from voiceconversion.common.TorchUtils import circular_write
-from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
-from voiceconversion.RVC.pipeline.Pipeline import Pipeline
 from torchaudio import transforms as tat
-from voiceconversion.VoiceChangerSettings import VoiceChangerSettings
-from voiceconversion.Exceptions import (
-    PipelineNotInitializedException,
-)
+
+from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
+from voiceconversion.common.TorchUtils import circular_write
+from voiceconversion.embedder.EmbedderManager import EmbedderManager
+from voiceconversion.Exceptions import PipelineNotInitializedException
+from voiceconversion.pitch_extractor.PitchExtractorManager import PitchExtractorManager
+from voiceconversion.RVC.consts import HUBERT_SAMPLE_RATE, WINDOW_SIZE
+from voiceconversion.RVC.pipeline.Pipeline import Pipeline
+from voiceconversion.RVC.pipeline.PipelineGenerator import createPipeline
+from voiceconversion.utils.VoiceChangerModel import AudioInOutFloat, VoiceChangerModel
+from voiceconversion.voice_changer_settings import VoiceChangerSettings
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +25,6 @@ logger = logging.getLogger(__name__)
 class RVCr2(VoiceChangerModel):
     def __init__(
         self,
-        model_dir: str,
-        slotInfo: RVCModelSlot,
         settings: VoiceChangerSettings,
     ):
         self.voiceChangerType = "RVC"
@@ -40,7 +32,6 @@ class RVCr2(VoiceChangerModel):
         self.device = DeviceManager.get_instance().device
         EmbedderManager.initialize()
         self.settings = settings
-        self.model_dir = model_dir
 
         self.pipeline: Pipeline | None = None
 
@@ -50,7 +41,6 @@ class RVCr2(VoiceChangerModel):
         self.return_length = 0
         self.skip_head = 0
         self.silence_front = 0
-        self.slotInfo = slotInfo
 
         self.resampler_in: tat.Resample | None = None
         self.resampler_out: tat.Resample | None = None
@@ -67,16 +57,11 @@ class RVCr2(VoiceChangerModel):
     def initialize(self, force_reload: bool, pretrain_dir: str):
         logger.info("Initializing...")
 
-        if self.settings.useONNX and not self.slotInfo.modelFileOnnx:
-            self.export2onnx()
-
         # pipelineの生成
         try:
             self.pipeline = createPipeline(
-                self.model_dir,
-                self.slotInfo,
+                self.settings.rvcImportedModelInfo,
                 self.settings.f0Detector,
-                self.settings.useONNX,
                 force_reload,
                 pretrain_dir,
             )
@@ -93,62 +78,18 @@ class RVCr2(VoiceChangerModel):
         ).to(self.device)
 
         self.resampler_out = tat.Resample(
-            orig_freq=self.slotInfo.samplingRate,
+            orig_freq=self.settings.rvcImportedModelInfo.samplingRate,
             new_freq=self.output_sample_rate,
             dtype=torch.float32,
         ).to(self.device)
 
         logger.info("Initialized.")
 
-    def set_sampling_rate(self, input_sample_rate: int, output_sample_rate: int):
-        if self.input_sample_rate != input_sample_rate:
-            self.input_sample_rate = input_sample_rate
-            self.resampler_in = tat.Resample(
-                orig_freq=self.input_sample_rate,
-                new_freq=HUBERT_SAMPLE_RATE,
-                dtype=torch.float32,
-            ).to(self.device)
-        if self.output_sample_rate != output_sample_rate:
-            self.output_sample_rate = output_sample_rate
-            self.resampler_out = tat.Resample(
-                orig_freq=self.slotInfo.samplingRate,
-                new_freq=self.output_sample_rate,
-                dtype=torch.float32,
-            ).to(self.device)
-
     def change_pitch_extractor(self, pretrain_dir: str):
         pitchExtractor = PitchExtractorManager.getPitchExtractor(
             self.settings.f0Detector, self.settings.gpu, pretrain_dir
         )
         self.pipeline.setPitchExtractor(pitchExtractor)
-
-    def update_settings(self, key: str, val, old_val, pretrain_dir: str):
-        if key in {"gpu", "forceFp32", "disableJit"}:
-            self.is_half = DeviceManager.get_instance().use_fp16()
-            self.dtype = torch.float16 if self.is_half else torch.float32
-            self.initialize(True)
-        elif key == "useONNX":
-            self.initialize()
-        elif key == "f0Detector" and self.pipeline is not None:
-            self.change_pitch_extractor(pretrain_dir)
-        elif key == "silentThreshold":
-            # Convert dB to RMS
-            self.inputSensitivity = 10 ** (self.settings.silentThreshold / 20)
-
-    def set_slot_info(self, slotInfo: RVCModelSlot):
-        self.slotInfo = slotInfo
-
-    def get_info(self):
-        data = {}
-        if self.pipeline is not None:
-            pipelineInfo = self.pipeline.getPipelineInfo()
-            data["pipelineInfo"] = pipelineInfo
-        else:
-            data["pipelineInfo"] = "None"
-        return data
-
-    def get_processing_sampling_rate(self):
-        return self.slotInfo.samplingRate
 
     def realloc(
         self,
@@ -218,9 +159,7 @@ class RVCr2(VoiceChangerModel):
             raise PipelineNotInitializedException()
 
         # Input audio is always float32
-        audio_in_t = torch.as_tensor(
-            audio_in, dtype=torch.float32, device=self.device
-        )
+        audio_in_t = torch.as_tensor(audio_in, dtype=torch.float32, device=self.device)
         if self.is_half:
             audio_in_t = audio_in_t.half()
 
@@ -237,16 +176,16 @@ class RVCr2(VoiceChangerModel):
             audio_in_16k,
             None,
             None,
-            self.settings.tran,
-            self.settings.formantShift,
-            self.settings.indexRatio,
+            self.settings.rvcImportedModelInfo.defaultTune,
+            self.settings.rvcImportedModelInfo.defaultFormantShift,
+            self.settings.rvcImportedModelInfo.defaultIndexRatio,
             convert_feature_size_16k,
             0,
-            self.slotInfo.embOutputLayer,
-            self.slotInfo.useFinalProj,
+            self.settings.rvcImportedModelInfo.embOutputLayer,
+            self.settings.rvcImportedModelInfo.useFinalProj,
             0,
             convert_feature_size_16k,
-            self.settings.protect,
+            self.settings.rvcImportedModelInfo.defaultProtect,
         )
 
         # TODO: Need to handle resampling for individual files
@@ -264,9 +203,7 @@ class RVCr2(VoiceChangerModel):
         assert self.resampler_out is not None
 
         # Input audio is always float32
-        audio_in_t = torch.as_tensor(
-            audio_in, dtype=torch.float32, device=self.device
-        )
+        audio_in_t = torch.as_tensor(audio_in, dtype=torch.float32, device=self.device)
         audio_in_16k = self.resampler_in(audio_in_t)
         if self.is_half:
             audio_in_16k = audio_in_16k.half()
@@ -285,16 +222,16 @@ class RVCr2(VoiceChangerModel):
                 self.convert_buffer,
                 self.pitch_buffer,
                 self.pitchf_buffer,
-                self.settings.tran,
-                self.settings.formantShift,
-                self.settings.indexRatio,
+                self.settings.rvcImportedModelInfo.defaultTune,
+                self.settings.rvcImportedModelInfo.defaultFormantShift,
+                self.settings.rvcImportedModelInfo.defaultIndexRatio,
                 self.convert_feature_size_16k,
                 self.silence_front,
-                self.slotInfo.embOutputLayer,
-                self.slotInfo.useFinalProj,
+                self.settings.rvcImportedModelInfo.embOutputLayer,
+                self.settings.rvcImportedModelInfo.useFinalProj,
                 self.skip_head,
                 self.return_length,
-                self.settings.protect,
+                self.settings.rvcImportedModelInfo.defaultProtect,
             )
             return None, vol
 
@@ -305,16 +242,16 @@ class RVCr2(VoiceChangerModel):
             self.convert_buffer,
             self.pitch_buffer,
             self.pitchf_buffer,
-            self.settings.tran,
-            self.settings.formantShift,
-            self.settings.indexRatio,
+            self.settings.rvcImportedModelInfo.defaultTune,
+            self.settings.rvcImportedModelInfo.defaultFormantShift,
+            self.settings.rvcImportedModelInfo.defaultIndexRatio,
             self.convert_feature_size_16k,
             self.silence_front,
-            self.slotInfo.embOutputLayer,
-            self.slotInfo.useFinalProj,
+            self.settings.rvcImportedModelInfo.embOutputLayer,
+            self.settings.rvcImportedModelInfo.useFinalProj,
             self.skip_head,
             self.return_length,
-            self.settings.protect,
+            self.settings.rvcImportedModelInfo.defaultProtect,
         )
 
         # FIXME: Why the heck does it require another sqrt to amplify the volume?
@@ -324,40 +261,3 @@ class RVCr2(VoiceChangerModel):
 
     def __del__(self):
         del self.pipeline
-
-    def export2onnx(self):
-        modelSlot = self.slotInfo
-
-        if modelSlot.isONNX:
-            logger.error(f"{modelSlot.modelFile} is already in ONNX format.")
-            return
-
-        output_path = export2onnx(self.model_dir, modelSlot)
-
-        self.slotInfo.modelFileOnnx = os.path.basename(output_path)
-        self.slotInfo.modelTypeOnnx = (
-            EnumInferenceTypes.onnxRVC.value
-            if self.slotInfo.f0
-            else EnumInferenceTypes.onnxRVCNono.value
-        )
-        saveSlotInfo(self.model_dir, self.slotInfo.slotIndex, self.slotInfo)
-
-    def get_model_current(self) -> dict:
-        return [
-            {
-                "key": "defaultTune",
-                "val": self.settings.tran,
-            },
-            {
-                "key": "defaultIndexRatio",
-                "val": self.settings.indexRatio,
-            },
-            {
-                "key": "defaultProtect",
-                "val": self.settings.protect,
-            },
-            {
-                "key": "defaultFormantShift",
-                "val": self.settings.formantShift,
-            },
-        ]

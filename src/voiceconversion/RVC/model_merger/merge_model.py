@@ -1,18 +1,19 @@
 import json
 import logging
 import os
-import torch
-from typing import Dict, Any
 from collections import OrderedDict
-from voiceconversion.ModelSlotManager import ModelSlotManager
-from safetensors import safe_open
-from voiceconversion.utils.ModelMerger import ModelMergerRequest
+from typing import Any, Dict
 
+import torch
+from safetensors import safe_open
+
+from voiceconversion.imported_model_info_manager import ImportedModelInfoManager
+from voiceconversion.utils.ModelMerger import ModelMergerRequest
 
 logger = logging.getLogger(__name__)
 
 
-def merge_model(model_dir: str, request: ModelMergerRequest):
+def merge_model(slotManager: ImportedModelInfoManager, request: ModelMergerRequest):
     def extract(ckpt: Dict[str, Any]):
         a = ckpt["model"]
         opt: Dict[str, Any] = OrderedDict()
@@ -26,18 +27,18 @@ def merge_model(model_dir: str, request: ModelMergerRequest):
 
     def load_weight(path: str):
         logger.info(f"Loading {path}...")
-        if path.endswith('.safetensors'):
-            with safe_open(path, 'pt', device='cpu') as cpt:
+        if path.endswith(".safetensors"):
+            with safe_open(path, "pt", device="cpu") as cpt:
                 state_dict = cpt.metadata()
-                weight = { k: cpt.get_tensor(k) for k in cpt.keys() }
-                config = json.loads(state_dict['config'])
+                weight = {k: cpt.get_tensor(k) for k in cpt.keys()}
+                config = json.loads(state_dict["config"])
         else:
-            state_dict = torch.load(path, map_location='cpu')
+            state_dict = torch.load(path, map_location="cpu")
             if "model" in state_dict:
                 weight = extract(state_dict)
             else:
                 weight = state_dict["weight"]
-            config = state_dict['config']
+            config = state_dict["config"]
         return weight, state_dict, config
 
     files = request.files
@@ -46,14 +47,17 @@ def merge_model(model_dir: str, request: ModelMergerRequest):
 
     weights = []
     alphas = []
-    slotManager = ModelSlotManager.get_instance(model_dir)
     for f in files:
         strength = f.strength
         if strength == 0:
             continue
         slotInfo = slotManager.get_slot_info(f.slotIndex)
 
-        filename = os.path.join(model_dir, str(f.slotIndex), os.path.basename(slotInfo.modelFile))  # slotInfo.modelFileはv.1.5.3.11以前はmodel_dirから含まれている。
+        filename = os.path.join(
+            slotManager.model_dir,
+            str(f.slotIndex),
+            os.path.basename(slotInfo.modelFile),
+        )  # slotInfo.modelFileはv.1.5.3.11以前はmodel_dirから含まれている。
 
         weight, state_dict, config = load_weight(filename)
         weights.append(weight)
@@ -84,7 +88,13 @@ def merge_model(model_dir: str, request: ModelMergerRequest):
         merged["info"] = state_dict["info"]
     except:
         pass
-    merged["embedder_name"] = state_dict["embedder_name"] if "embedder_name" in state_dict else None
-    merged["embedder_output_layer"] = state_dict["embedder_output_layer"] if "embedder_output_layer" in state_dict else None
+    merged["embedder_name"] = (
+        state_dict["embedder_name"] if "embedder_name" in state_dict else None
+    )
+    merged["embedder_output_layer"] = (
+        state_dict["embedder_output_layer"]
+        if "embedder_output_layer" in state_dict
+        else None
+    )
     logger.info("write metadata done.")
     return merged

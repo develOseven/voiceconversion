@@ -1,10 +1,10 @@
-import numpy as np
 import os
 import sys
 import tempfile
 from enum import Enum
 from typing import Literal, TypeAlias
 
+import numpy as np
 
 VoiceChangerType: TypeAlias = Literal[
     "RVC",
@@ -44,6 +44,6 @@ PitchExtractorType: TypeAlias = Literal[
 ]
 
 tmpdir = tempfile.TemporaryDirectory()
-TMP_DIR = os.path.join(tmpdir.name, "tmp_dir") if hasattr(sys, "_MEIPASS") else "tmp_dir"
-
-MAX_SLOT_NUM = 500
+TMP_DIR = (
+    os.path.join(tmpdir.name, "tmp_dir") if hasattr(sys, "_MEIPASS") else "tmp_dir"
+)

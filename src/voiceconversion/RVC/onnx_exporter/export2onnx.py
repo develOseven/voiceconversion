@@ -1,22 +1,25 @@
 import json
 import logging
-import onnx
 import os
+from io import BytesIO
+
+import onnx
 import safetensors
 import torch
 from onnxsim import simplify
-from voiceconversion.const import EnumInferenceTypes
-from voiceconversion.data.ModelSlot import RVCModelSlot
-from voiceconversion.common.SafetensorsUtils import load_model
-from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
-from voiceconversion.RVC.inferencer.rvc_models.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM  # type: ignore
-from io import BytesIO
 
+from voiceconversion.common.deviceManager.DeviceManager import DeviceManager
+from voiceconversion.common.SafetensorsUtils import load_model
+from voiceconversion.const import EnumInferenceTypes
+from voiceconversion.data.imported_model_info import RVCImportedModelInfo
+from voiceconversion.RVC.inferencer.rvc_models.infer_pack.models_onnx import (
+    SynthesizerTrnMsNSFsidM,  # type: ignore
+)
 
 logger = logging.getLogger(__name__)
 
 
-def export2onnx(model_dir: str, modelSlot: RVCModelSlot) -> str:
+def export2onnx(model_dir: str, modelSlot: RVCImportedModelInfo) -> str:
     model_path = os.path.join(model_dir, str(modelSlot.slotIndex))
     modelFile = os.path.join(model_path, modelSlot.modelFile)
 
@@ -44,26 +47,23 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
     device_manager = DeviceManager.get_instance()
     dev = device_manager.device
     # DirectML and MPS fail to export due to different incompatibilities. And export is in FP32 anyway.
-    if dev.type != 'cuda':
-        dev = torch.device('cpu')
+    if dev.type != "cuda":
+        dev = torch.device("cpu")
     is_half = False
-    is_safetensors = input_model.endswith('.safetensors')
+    is_safetensors = input_model.endswith(".safetensors")
 
     if is_safetensors:
-        cpt = safetensors.safe_open(input_model, 'pt', device=str(dev))
+        cpt = safetensors.safe_open(input_model, "pt", device=str(dev))
         m = cpt.metadata()
         data = {
-            'config': json.loads(m.get('config', '{}')),
-            'params': json.loads(m.get('params', '{}'))
+            "config": json.loads(m.get("config", "{}")),
+            "params": json.loads(m.get("params", "{}")),
         }
     else:
         cpt = torch.load(input_model, map_location=dev)
-        data = {
-            'config': cpt['config'],
-            'params': cpt['params']
-        }
+        data = {"config": cpt["config"], "params": cpt["params"]}
 
-    logger.info(f'Exporting to ONNX on {dev}')
+    logger.info(f"Exporting to ONNX on {dev}")
 
     # EnumInferenceTypesのままだとシリアライズできないのでテキスト化
     if metadata["modelType"] == EnumInferenceTypes.pyTorchRVC.value:
@@ -91,7 +91,9 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
 
     featsLength = 64
 
-    feats = torch.zeros((1, featsLength, metadata["embChannels"]), dtype=torch.float32, device=dev)
+    feats = torch.zeros(
+        (1, featsLength, metadata["embChannels"]), dtype=torch.float32, device=dev
+    )
     p_len = torch.tensor([featsLength], dtype=torch.int64, device=dev)
     sid = torch.tensor([0], dtype=torch.int64, device=dev)
     skip_head = torch.tensor(32, dtype=torch.int64, device=dev)
@@ -101,7 +103,16 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
     if metadata["f0"]:
         pitch = torch.zeros((1, featsLength), dtype=torch.int64, device=dev)
         pitchf = torch.zeros((1, featsLength), dtype=torch.float32, device=dev)
-        input_names = ["feats", "p_len", "pitch", "pitchf", "sid", "skip_head", "return_length", "formant_length"]
+        input_names = [
+            "feats",
+            "p_len",
+            "pitch",
+            "pitchf",
+            "sid",
+            "skip_head",
+            "return_length",
+            "formant_length",
+        ]
         inputs = (
             feats,
             p_len,
@@ -114,7 +125,14 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
         )
 
     else:
-        input_names = ["feats", "p_len", "sid", "skip_head", "return_length", "formant_length"]
+        input_names = [
+            "feats",
+            "p_len",
+            "sid",
+            "skip_head",
+            "return_length",
+            "formant_length",
+        ]
         inputs = (
             feats,
             p_len,

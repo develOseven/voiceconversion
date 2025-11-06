@@ -1,18 +1,25 @@
-import os
-import torch
 import logging
-from const import TMP_DIR, PTH_MERGED_FILENAME
-from voiceconversion.RVC.model_merger.MergeModel import merge_model
-from voiceconversion.utils.ModelMerger import ModelMerger, ModelMergerRequest
+import os
 
+import torch
+
+from voiceconversion.const import PTH_MERGED_FILENAME, TMP_DIR
+from voiceconversion.imported_model_info_manager import ModelSlotManager
+from voiceconversion.RVC.model_merger.merge_model import merge_model
+from voiceconversion.utils.ModelMerger import ModelMerger, ModelMergerRequest
 
 logger = logging.getLogger(__name__)
 
 
 class RVCModelMerger(ModelMerger):
     @classmethod
-    def merge_models(cls, model_dir: str, request: ModelMergerRequest, store_slot: int) -> str:
-        model = merge_model(model_dir, request)
+    def merge_models(
+        cls,
+        slot_manager: ModelSlotManager,
+        request: ModelMergerRequest,
+        store_slot: int,
+    ) -> str:
+        model = merge_model(slot_manager, request)
 
         # いったんは、アップロードフォルダに格納する。（歴史的経緯）
         # 後続のloadmodelを呼び出すことで永続化モデルフォルダに移動させられる。
